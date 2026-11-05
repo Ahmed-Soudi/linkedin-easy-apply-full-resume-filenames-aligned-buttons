@@ -64,6 +64,52 @@
       text-overflow: clip !important;
       -webkit-line-clamp: unset !important;
     }
+
+    /* Saved resumes: "Resumes and application data" dialog on /jobs/. */
+    [data-li-settings-dialog] {
+      width: min(1000px, calc(100vw - 48px)) !important;
+      max-width: calc(100vw - 48px) !important;
+      box-sizing: border-box !important;
+    }
+    [data-li-settings-stretch] {
+      width: 100% !important;
+      max-width: none !important;
+      min-width: 0 !important;
+      box-sizing: border-box !important;
+    }
+    [data-li-settings-card] {
+      display: flex !important;
+      align-items: center !important;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
+    [data-li-settings-main] {
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+      max-width: none !important;
+    }
+    [data-li-settings-fileinfo] {
+      min-width: 0 !important;
+      max-width: none !important;
+      overflow: visible !important;
+      -webkit-line-clamp: unset !important;
+    }
+    [data-li-settings-name] {
+      display: block !important;
+      white-space: nowrap !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      text-overflow: clip !important;
+      overflow-wrap: normal !important;
+      word-break: normal !important;
+      max-width: 100% !important;
+      -webkit-line-clamp: unset !important;
+    }
+    [data-li-settings-menu] {
+      margin-left: auto !important;
+      flex: 0 0 auto !important;
+    }
   `;
 
   function ensureStyles() {
@@ -123,14 +169,112 @@
     filename.title = filename.textContent.trim();
   }
 
+
+  function findSettingsDialog() {
+    const title = Array.from(document.querySelectorAll('h1,h2,h3,h4,[role="heading"]'))
+      .find((el) => el.textContent.trim().toLowerCase() === "resumes and application data"
+        && el.getClientRects().length);
+    if (!title) return null;
+
+    let dialog = title.closest('dialog, [role="dialog"], [aria-modal="true"]');
+    if (!dialog) {
+      // Older LinkedIn UI sometimes renders the popup without a dialog role.
+      // Find the outermost visible, modal-sized ancestor instead.
+      for (let element = title.parentElement; element && element !== document.body;
+        element = element.parentElement) {
+        const box = element.getBoundingClientRect();
+        if (box.width >= 450 && box.width <= 1020 &&
+            box.height >= 300 && box.height <= window.innerHeight + 60) {
+          dialog = element;
+        }
+      }
+    }
+    if (!dialog || (dialog.tagName === "DIALOG" && !dialog.open)) return null;
+    return { dialog, title };
+  }
+
+  function settingsFilenameNodes(dialog) {
+    // A rendered ellipsis is normally CSS; the element still contains the full
+    // text. Scan leaf elements to avoid treating enclosing paragraphs as names.
+    return Array.from(dialog.querySelectorAll("span, p, a, div, strong, b"))
+      .filter((el) => !el.children.length &&
+        FILE_EXTENSION.test(el.textContent.trim()) &&
+        el.textContent.trim().length > 8);
+  }
+
+  function findSettingsCard(name, dialog) {
+    let card = null;
+    for (let element = name.parentElement; element && element !== dialog;
+      element = element.parentElement) {
+      const box = element.getBoundingClientRect();
+      if (box.width < 230 || box.height < 48 || box.height > 130) continue;
+
+      // A card has one filename, and typically a date and a menu button.
+      const names = settingsFilenameNodes(element);
+      if (names.length !== 1 || names[0] !== name) continue;
+      const hasDate = /(?:last used on|uploaded on|added on)/i.test(element.textContent);
+      const hasMenu = !!element.querySelector('button, [role="button"], [aria-haspopup]');
+      if (hasDate && hasMenu) card = element;
+    }
+    return card;
+  }
+
+  function fixSettingsCard(name, dialog, title) {
+    const card = findSettingsCard(name, dialog);
+    if (!card) return;
+
+    card.setAttribute("data-li-settings-card", "");
+    name.setAttribute("data-li-settings-name", "");
+    name.title = name.textContent.trim();
+
+    let textParent = name.parentElement;
+    while (textParent && textParent !== card) {
+      textParent.setAttribute("data-li-settings-fileinfo", "");
+      textParent = textParent.parentElement;
+    }
+
+    const sections = Array.from(card.children);
+    const main = sections.find((el) => el.contains(name));
+    const menu = [...sections].reverse().find((el) =>
+      el !== main && !!el.querySelector('button, [role="button"], [aria-haspopup]')
+    ) || sections.find((el) => el !== main &&
+      el.matches('button, [role="button"], [aria-haspopup]'));
+    main?.setAttribute("data-li-settings-main", "");
+    menu?.setAttribute("data-li-settings-menu", "");
+
+    // LinkedIn also constrains the shared list wrapper to about 376px.
+    // Widen wrappers below the dialog heading, but leave the header and
+    // non-resume parts of the popup alone.
+    for (let element = card.parentElement; element && element !== dialog;
+      element = element.parentElement) {
+      if (element.contains(title)) break;
+      element.setAttribute("data-li-settings-stretch", "");
+    }
+  }
+
+  function fixSettingsDialog() {
+    const settings = findSettingsDialog();
+    if (!settings) return;
+    const { dialog, title } = settings;
+    ensureStyles();
+    dialog.setAttribute("data-li-settings-dialog", "");
+
+    for (const name of settingsFilenameNodes(dialog)) {
+      fixSettingsCard(name, dialog, title);
+    }
+  }
+
   function scan() {
     const dialog = document.querySelector(DIALOG_SELECTOR);
-    if (!dialog || !dialog.open) return;
-    ensureStyles();
-    // Download links are optional, particularly for newly uploaded resumes.
-    for (const radio of dialog.querySelectorAll('input[type="radio"]')) {
-      fixCard(radio, dialog);
+    if (dialog && dialog.open) {
+      ensureStyles();
+      // Download links are optional, particularly for newly uploaded resumes.
+      for (const radio of dialog.querySelectorAll('input[type="radio"]')) {
+        fixCard(radio, dialog);
+      }
     }
+
+    fixSettingsDialog();
   }
 
   let scanScheduled = false;
@@ -145,5 +289,12 @@
 
   scan();
   const observer = new MutationObserver(scheduleScan);
-  observer.observe(document.documentElement, { childList: true, subtree: true });
+  observer.observe(document.documentElement, {
+    childList: true,
+    subtree: true,
+    attributes: true,
+    attributeFilter: ["open", "hidden", "aria-expanded"]
+  });
+  // Covers controls that reveal already-rendered resumes without inserting nodes.
+  document.addEventListener("click", scheduleScan, true);
 })();
