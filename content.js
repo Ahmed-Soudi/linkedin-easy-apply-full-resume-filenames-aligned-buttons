@@ -209,12 +209,12 @@
       const box = element.getBoundingClientRect();
       if (box.width < 230 || box.height < 48 || box.height > 130) continue;
 
-      // A card has one filename, and typically a date and a menu button.
+      // A card has one filename and a menu button; its date is optional.
       const names = settingsFilenameNodes(element);
       if (names.length !== 1 || names[0] !== name) continue;
-      const hasDate = /(?:last used on|uploaded on|added on)/i.test(element.textContent);
+      // Uploaded resumes may not have a "Last used on" date yet.
       const hasMenu = !!element.querySelector('button, [role="button"], [aria-haspopup]');
-      if (hasDate && hasMenu) card = element;
+      if (hasMenu) card = element;
     }
     return card;
   }
