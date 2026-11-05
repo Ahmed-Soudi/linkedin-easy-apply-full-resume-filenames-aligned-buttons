@@ -131,12 +131,20 @@
     }
   `;
 
-  function ensureStyles() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement("style");
-    style.id = STYLE_ID;
-    style.textContent = css;
-    (document.head || document.documentElement).appendChild(style);
+  function ensureStyles(root = document) {
+    // Styles in document.head do not cross Shadow DOM boundaries.
+    // LinkedIn's interop-outlet hosts its older Jobs preferences in an
+    // OPEN shadow root. Each root therefore needs its own stylesheet.
+    let style = root.querySelector("#" + STYLE_ID);
+    if (!style) {
+      style = document.createElement("style");
+      style.id = STYLE_ID;
+      const target = root.nodeType === 11
+        ? root : (document.head || document.documentElement);
+      target.appendChild(style);
+    }
+    // Updating an existing sheet also prevents stale styles after extension reload.
+    if (style.textContent !== css) style.textContent = css;
   }
 
   function getFilename(card) {
@@ -291,8 +299,8 @@
   // LinkedIn's older Jobs preferences use Artdeco/Ember markup instead of
   // the Easy Apply SDUI cards. These saved-resume filenames live in H3
   // elements, not the SPAN/P elements used by the other dialog.
-  function fixLegacySavedResumeDialog() {
-    const dialog = document.querySelector(
+  function fixLegacySavedResumeDialog(root = document) {
+    const dialog = root.querySelector(
       '.job-seeking-preferences-index__modal[role="dialog"]'
     );
     if (!dialog) return;
@@ -300,8 +308,14 @@
     const cards = dialog.querySelectorAll('.jobs-resume-card__container');
     if (!cards.length) return;
 
-    ensureStyles();
+    ensureStyles(root);
     dialog.setAttribute('data-li-settings-dialog', '');
+
+    // LinkedIn's Artdeco modal defines its own width in the shadow tree.
+    // Inline !important is deliberately scoped to this exact modal.
+    dialog.style.setProperty('width', 'min(1000px, calc(100vw - 48px))', 'important');
+    dialog.style.setProperty('max-width', 'calc(100vw - 48px)', 'important');
+    dialog.style.setProperty('box-sizing', 'border-box', 'important');
 
     for (const card of cards) {
       const attachment = card.querySelector('.jobs-resume-card__attachment');
@@ -316,6 +330,18 @@
       menu.setAttribute('data-li-settings-menu', '');
       filename.title = filename.textContent.trim();
 
+      card.style.setProperty('width', '100%', 'important');
+      card.style.setProperty('max-width', '100%', 'important');
+      card.style.setProperty('box-sizing', 'border-box', 'important');
+      attachment.style.setProperty('flex', '1 1 auto', 'important');
+      attachment.style.setProperty('min-width', '0', 'important');
+      filename.style.setProperty('white-space', 'nowrap', 'important');
+      filename.style.setProperty('text-overflow', 'clip', 'important');
+      filename.style.setProperty('max-width', '100%', 'important');
+      filename.style.setProperty('overflow-x', 'auto', 'important');
+      filename.style.setProperty('overflow-y', 'hidden', 'important');
+      menu.style.setProperty('flex', '0 0 auto', 'important');
+
       // Stretch the old Ember list and its wrappers to fill the wider dialog.
       // Avoid touching the header, action bar, or anything outside this modal.
       for (let parent = card.parentElement;
@@ -323,8 +349,29 @@
            !parent.classList.contains('artdeco-modal__content');
            parent = parent.parentElement) {
         parent.setAttribute('data-li-settings-stretch', '');
+        parent.style.setProperty('width', '100%', 'important');
+        parent.style.setProperty('max-width', 'none', 'important');
+        parent.style.setProperty('min-width', '0', 'important');
       }
     }
+  }
+
+  let shadowObserver = null;
+  let observedShadowRoot = null;
+
+  function observeLinkedInShadowRoot() {
+    const shadowRoot = document.querySelector('#interop-outlet')?.shadowRoot;
+    if (!shadowRoot || shadowRoot === observedShadowRoot) return shadowRoot;
+    shadowObserver?.disconnect();
+    observedShadowRoot = shadowRoot;
+    shadowObserver = new MutationObserver(scheduleScan);
+    shadowObserver.observe(shadowRoot, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['open', 'hidden', 'aria-expanded']
+    });
+    return shadowRoot;
   }
 
   function scan() {
@@ -339,6 +386,11 @@
 
     fixSettingsDialog();
     fixLegacySavedResumeDialog();
+
+    // The legacy Jobs modal is rendered inside declarative Shadow DOM.
+    // document.querySelector cannot see elements across that boundary.
+    const shadowRoot = observeLinkedInShadowRoot();
+    if (shadowRoot) fixLegacySavedResumeDialog(shadowRoot);
   }
 
   let scanScheduled = false;
