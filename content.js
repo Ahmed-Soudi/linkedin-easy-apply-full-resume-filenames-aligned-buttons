@@ -110,6 +110,25 @@
       margin-left: auto !important;
       flex: 0 0 auto !important;
     }
+
+    [data-li-settings-dialog].job-seeking-preferences-index__modal
+    [data-li-settings-card] {
+      gap: 0 !important;
+    }
+    [data-li-settings-dialog].job-seeking-preferences-index__modal
+    [data-li-settings-main] {
+      width: auto !important;
+      flex: 1 1 auto !important;
+      min-width: 0 !important;
+    }
+    [data-li-settings-dialog].job-seeking-preferences-index__modal
+    [data-li-settings-name] {
+      width: 100% !important;
+      max-width: 100% !important;
+      white-space: nowrap !important;
+      text-overflow: clip !important;
+      overflow-x: auto !important;
+    }
   `;
 
   function ensureStyles() {
@@ -264,6 +283,46 @@
     }
   }
 
+
+  // LinkedIn's older Jobs preferences use Artdeco/Ember markup instead of
+  // the Easy Apply SDUI cards. These saved-resume filenames live in H3
+  // elements, not the SPAN/P elements used by the other dialog.
+  function fixLegacySavedResumeDialog() {
+    const dialog = document.querySelector(
+      '.job-seeking-preferences-index__modal[role="dialog"]'
+    );
+    if (!dialog) return;
+
+    const cards = dialog.querySelectorAll('.jobs-resume-card__container');
+    if (!cards.length) return;
+
+    ensureStyles();
+    dialog.setAttribute('data-li-settings-dialog', '');
+
+    for (const card of cards) {
+      const attachment = card.querySelector('.jobs-resume-card__attachment');
+      const filename = card.querySelector('.ui-attachment__filename');
+      const menu = card.querySelector('.jobs-resume-card__options-button-container');
+      if (!attachment || !filename || !menu ||
+          !FILE_EXTENSION.test(filename.textContent.trim())) continue;
+
+      card.setAttribute('data-li-settings-card', '');
+      attachment.setAttribute('data-li-settings-main', '');
+      filename.setAttribute('data-li-settings-name', '');
+      menu.setAttribute('data-li-settings-menu', '');
+      filename.title = filename.textContent.trim();
+
+      // Stretch the old Ember list and its wrappers to fill the wider dialog.
+      // Avoid touching the header, action bar, or anything outside this modal.
+      for (let parent = card.parentElement;
+           parent && parent !== dialog &&
+           !parent.classList.contains('artdeco-modal__content');
+           parent = parent.parentElement) {
+        parent.setAttribute('data-li-settings-stretch', '');
+      }
+    }
+  }
+
   function scan() {
     const dialog = document.querySelector(DIALOG_SELECTOR);
     if (dialog && dialog.open) {
@@ -275,6 +334,7 @@
     }
 
     fixSettingsDialog();
+    fixLegacySavedResumeDialog();
   }
 
   let scanScheduled = false;
