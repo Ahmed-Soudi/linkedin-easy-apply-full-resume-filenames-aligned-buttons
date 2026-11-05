@@ -2,6 +2,12 @@
 
 A lightweight Chrome/Chromium extension that expands resume filenames and aligns controls in both LinkedIn Easy Apply and the saved-resumes list under LinkedIn Jobs.
 
+## Version 1.0.4
+
+Fixes the underlying issue in LinkedIn's **Resumes and application data** window. The legacy Artdeco modal is mounted inside an **open Shadow DOM** (`#interop-outlet`), which ordinary `document.querySelector` calls cannot reach and ordinary document-level styles cannot affect. The extension now discovers and observes the shadow root, inserts the stylesheet inside it, and applies the 1000px modal width, full-width cards, single-line names, and right-aligned menus. Dynamic uploads and expanded lists are handled inside the shadow root too.
+
+If you were testing an earlier update, check the installed version in `chrome://extensions/`: it must show **1.0.4**. Reload the unpacked extension and refresh the LinkedIn tab before retesting.
+
 ## Version 1.0.3
 
 Fixes the **Resumes and application data** dialog when LinkedIn uses its older Artdeco/Ember markup. In that interface, filename elements are `h3.ui-attachment__filename` inside `.jobs-resume-card__container`, unlike the Easy Apply cards. The extension now detects that structure independently of the dialog heading and widens the cards, displays filenames on one line and keeps each three-dot menu at the right. It also handles more-resume expansion and new uploads.
@@ -63,6 +69,7 @@ Git must be installed and GitHub authentication configured before pushing.
 - `tests/fixture.html`: Local smoke-test page for Easy Apply.
 - `tests/fixture-settings.html`: Local smoke-test page for the newer saved-resumes dialog, expansion, and uploads.
 - `tests/fixture-legacy-settings.html`: Regression test for the older saved-resumes Artdeco markup provided by LinkedIn.
+- `tests/fixture-shadow-settings.html`: Browser regression test for the actual open Shadow DOM boundary, dynamic uploads, modal width, and full filenames.
 - `.gitignore`: Local files not meant for the repository.
 
 ## Privacy and permissions
@@ -71,7 +78,7 @@ The extension runs only on `https://www.linkedin.com/jobs/*`. It only reads the 
 
 ## Limitations
 
-LinkedIn may change its HTML. Easy Apply uses relatively stable signals (`dialog[data-testid="dialog"]`, radio inputs, and PDF/DOC(X) filenames). Saved-resume settings is supported in two forms: a newer dialog identified by its heading, and a legacy dialog identified by its stable Artdeco resume-card classes. The legacy layout includes H3 filename elements; both modes support newly added cards. Changes to these HTML structures may require maintenance.
+LinkedIn may change its HTML. Easy Apply uses relatively stable signals (`dialog[data-testid="dialog"]`, radio inputs, and PDF/DOC(X) filenames). Saved-resume settings is supported in two forms: a newer dialog identified by its heading, and a legacy dialog identified by its stable Artdeco resume-card classes. The legacy layout includes H3 filename elements inside an open Shadow DOM. The extension injects scoped styles into that shadow root. Both modes support newly added cards. Changes to these HTML structures may require maintenance.
 
 You can open the two local fixture pages in Chrome to check the representative Easy Apply and saved-resume layouts. These are simulated pages, not a replacement for testing against LinkedIn itself.
 
