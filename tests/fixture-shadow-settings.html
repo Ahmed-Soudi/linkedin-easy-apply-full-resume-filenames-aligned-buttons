@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LinkedIn Shadow DOM saved resumes regression</title>
+<style>body{font:15px Arial;background:#eee}</style>
+<script defer src="../content.js"></script>
+</head>
+<body>
+<h1>Saved résumé preferences test inside open Shadow DOM</h1>
+<div id="interop-outlet" data-testid="interop-shadowdom">
+<template shadowrootmode="open">
+<style>
+.artdeco-modal{width:600px;max-width:600px!important;margin:24px auto;background:white;box-sizing:border-box}
+.artdeco-modal__content{padding:20px 40px}
+.jobs-resume-card__container{display:flex;width:376px;min-height:72px;border:1px solid #ddd;border-radius:8px;align-items:center;margin:10px 0}
+.jobs-resume-card__attachment{flex:1 1 auto;min-width:0;padding:10px}
+.ui-attachment__filename{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px;margin:0}
+.ui-attachment__filesize{font-size:13px;color:#777}
+.jobs-resume-card__options-button-container{width:100px;flex:0 0 100px;border-left:1px solid #ddd;display:flex;align-items:center;justify-content:center;min-height:70px}
+.display-flex.flex-column.flex-grow-1{display:flex;flex-direction:column}
+</style>
+<div class="artdeco-modal job-seeking-preferences-index__modal" role="dialog" aria-labelledby="application-preferences__modal-header">
+<div class="artdeco-modal__header"><h1 id="application-preferences__modal-header">Resumes and application data</h1></div>
+<div class="artdeco-modal__content"><div class="p5">
+<div class="display-flex flex-column flex-grow-1" id="resumes">
+<div class="jobs-resume-card__container">
+<div class="ui-attachment jobs-resume-card__attachment ui-attachment--pdf">
+<h3 class="ui-attachment__filename jobs-resume-card__filedata">Sample_User_Digital_Marketing_Lead_Generation_Specialist_CV.pdf</h3>
+<p class="ui-attachment__filesize jobs-resume-card__filedata">Uploaded on 11/5/2026</p>
+</div>
+<div class="jobs-resume-card__options-button-container"><button type="button" class="jobs-resume-card__dropdown-trigger">•••</button></div>
+</div></div>
+<button id="add" type="button">Simulate new résumé</button>
+<p id="status">Checking...</p>
+</div></div>
+</div>
+</template>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const shadow = document.getElementById("interop-outlet").shadowRoot;
+  const check = () => {
+    const dialog = shadow.querySelector(".job-seeking-preferences-index__modal");
+    const cards = [...shadow.querySelectorAll(".jobs-resume-card__container")];
+    const correctWidth = dialog.getBoundingClientRect().width >= 900;
+    const correctNames = cards.every((card) => {
+      const name = card.querySelector(".ui-attachment__filename");
+      return name.hasAttribute("data-li-settings-name") &&
+        getComputedStyle(name).whiteSpace === "nowrap" &&
+        getComputedStyle(name).textOverflow === "clip";
+    });
+    shadow.getElementById("status").textContent =
+      correctWidth && correctNames && cards.every((c) => c.hasAttribute("data-li-settings-card"))
+      ? "PASS: " + cards.length + " saved résumés formatted across Shadow DOM"
+      : "FAIL: Shadow DOM formatting not active";
+  };
+  shadow.getElementById("add").addEventListener("click", () => {
+    const card = shadow.querySelector(".jobs-resume-card__container").cloneNode(true);
+    card.querySelector(".ui-attachment__filename").textContent =
+      "Sample_User_Newly_Uploaded_Social_Media_Manager_CV.pdf";
+    card.removeAttribute("data-li-settings-card");
+    shadow.getElementById("resumes").prepend(card);
+    setTimeout(check, 300);
+  });
+  setTimeout(check, 500);
+});
+</script>
+</body>
+</html>
