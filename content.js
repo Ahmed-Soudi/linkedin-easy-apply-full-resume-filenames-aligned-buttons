@@ -1,8 +1,9 @@
 /*
  * LinkedIn Easy Apply - Full Resume Filenames & Aligned Buttons
  * No permissions, external requests, or modifications to application data.
- * Targets resume cards by their download link, radio button and filename,
- * rather than LinkedIn's frequently changing generated CSS class names.
+ * Uses the filename and resume-selection radio to identify cards, including
+ * newly uploaded resumes which may not have a download button.
+ * This script only changes presentation, never application data or selection.
  */
 (() => {
   "use strict";
@@ -36,6 +37,7 @@
       flex: 0 0 auto !important;
     }
     [data-li-resume-radio] {
+      margin-left: auto !important;
       flex: 0 0 auto !important;
     }
     [data-li-resume-text-ancestor] {
@@ -78,48 +80,46 @@
     );
   }
 
-  function getCard(download, dialog) {
-    // The first ancestor with a resume radio button AND a filename is the card.
-    // This avoids depending on LinkedIn's changing class names and inline widths.
-    for (let element = download.parentElement; element && element !== dialog;
+  function getCard(radio, dialog) {
+    // Choose the closest ancestor with exactly this one radio and a filename.
+    // A broader fieldset could also contain other resume cards; avoid it.
+    for (let element = radio.parentElement; element && element !== dialog;
       element = element.parentElement) {
-      if (element.querySelector('input[type="radio"]') && getFilename(element)) {
-        return element;
-      }
+      if (element.querySelectorAll('input[type="radio"]').length !== 1) continue;
+      const filename = getFilename(element);
+      if (filename) return { card: element, filename };
     }
     return null;
   }
 
-  function fixCard(download, dialog) {
-    const card = getCard(download, dialog);
-    if (!card) return;
+  function fixCard(radio, dialog) {
+    const result = getCard(radio, dialog);
+    if (!result) return;
 
-    const filename = getFilename(card);
-    const paragraph = filename?.closest("p");
-    const main = download.parentElement;
-    const clickable = main?.querySelector('[role="button"]');
-    const radio = card.querySelector('input[type="radio"]');
+    const { card, filename } = result;
+    const paragraph = filename.closest("p");
+    const children = Array.from(card.children);
+    const main = children.find((child) => child.contains(filename));
+    const radioSection = children.find((child) => child.contains(radio));
+    if (!paragraph || !main || !radioSection || main === radioSection) return;
 
-    if (!filename || !paragraph || !clickable || !radio) return;
-    if (!clickable.contains(filename)) return;
+    const clickable = filename.closest('[role="button"]');
+    const download = main.querySelector(DOWNLOAD_SELECTOR);
 
     card.setAttribute("data-li-resume-card", "");
     main.setAttribute("data-li-resume-main", "");
-    clickable.setAttribute("data-li-resume-clickable", "");
-    download.setAttribute("data-li-resume-download", "");
-
-    const radioSection = Array.from(card.children).find((child) => child.contains(radio));
-    radioSection?.setAttribute("data-li-resume-radio", "");
+    radioSection.setAttribute("data-li-resume-radio", "");
+    if (clickable && main.contains(clickable)) {
+      clickable.setAttribute("data-li-resume-clickable", "");
+    }
+    if (download) download.setAttribute("data-li-resume-download", "");
 
     paragraph.setAttribute("data-li-resume-filename", "");
-    // LinkedIn truncates the text on several nested elements.
     for (let element = paragraph.parentElement, level = 0;
-      element && level < 2; element = element.parentElement, level++) {
+      element && element !== card && level < 2;
+      element = element.parentElement, level++) {
       element.setAttribute("data-li-resume-text-ancestor", "");
     }
-
-    // If a filename is longer than the dialog, it stays on one line and can
-    // be scrolled horizontally; the right-hand controls remain accessible.
     filename.title = filename.textContent.trim();
   }
 
@@ -127,8 +127,9 @@
     const dialog = document.querySelector(DIALOG_SELECTOR);
     if (!dialog || !dialog.open) return;
     ensureStyles();
-    for (const download of dialog.querySelectorAll(DOWNLOAD_SELECTOR)) {
-      fixCard(download, dialog);
+    // Download links are optional, particularly for newly uploaded resumes.
+    for (const radio of dialog.querySelectorAll('input[type="radio"]')) {
+      fixCard(radio, dialog);
     }
   }
 
