@@ -18,12 +18,12 @@
   </style>
   <script defer src="../content.js"></script>
   <script>
-    function makeCard(name) {
+    function makeCard(name, hasDownload = true) {
       const wrap = document.createElement('div');
       wrap.innerHTML = `<div class="card" style="width:33.6rem;border-color:#ddd">
         <div class="main"><div role="button" class="clickable"><span class="fileicon">PDF</span>
           <div class="text"><p class="filename"><span></span></p><small>11/5/2026</small></div>
-        </div><a href="https://www.linkedin.com/ambry/?download=1" aria-label="Download">⇩</a></div>
+        </div>${hasDownload ? '<a href="https://www.linkedin.com/ambry/?download=1" aria-label="Download">⇩</a>' : ''}</div>
         <div class="radio"><input type="radio" name="resumes"></div>
       </div>`;
       wrap.querySelector('.filename span').textContent = name;
@@ -31,13 +31,15 @@
     }
     document.addEventListener('DOMContentLoaded', () => {
       const cards = document.getElementById('cards');
-      cards.appendChild(makeCard('Ahmed_Soudi_Digital_Marketing_Lead_Generation_Specialist_CV.pdf'));
-      setTimeout(() => cards.appendChild(makeCard('Ahmed_Soudi_Social_Media_Specialist_Misr_Radiology_Center_CV.pdf')), 150);
+      cards.appendChild(makeCard('Ahmed_Soudi_Digital_Marketing_Lead_Generation_Specialist_CV.pdf', true));
+      cards.appendChild(makeCard('Ahmed_Soudi_Social_Media_Specialist_Misr_Radiology_Center_CV.pdf', true));
+      // The freshly uploaded resume appears later, and has no download icon.
+      setTimeout(() => cards.prepend(makeCard('Ahmed_Soudi_Digital_Marketing_Assistant_Manager_CV.pdf', false)), 150);
       setTimeout(() => {
         const fixed = cards.querySelectorAll('[data-li-resume-card]').length;
         const aligned = cards.querySelectorAll('[data-li-resume-download]').length;
         const status = document.getElementById('status');
-        status.textContent = fixed === 2 && aligned === 2 ? 'PASS: initial and dynamic cards enhanced' : 'FAIL: expected 2 enhanced cards, got ' + fixed;
+        status.textContent = fixed === 3 && aligned === 2 ? 'PASS: 2 saved resumes and 1 freshly uploaded resume (no download button)' : 'FAIL: expected 3 enhanced cards and 2 downloads, got ' + fixed + ' cards and ' + aligned + ' downloads';
       }, 1000);
     });
   </script>
