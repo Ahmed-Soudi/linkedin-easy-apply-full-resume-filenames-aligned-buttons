@@ -275,6 +275,10 @@
     const settings = findSettingsDialog();
     if (!settings) return;
     const { dialog, title } = settings;
+    // The Artdeco dialog has accessible "Show options for *.pdf" spans;
+    // generic filename detection could mistake these for the real H3 names.
+    // Leave this DOM variant exclusively to fixLegacySavedResumeDialog().
+    if (dialog.matches('.job-seeking-preferences-index__modal')) return;
     ensureStyles();
     dialog.setAttribute("data-li-settings-dialog", "");
 
