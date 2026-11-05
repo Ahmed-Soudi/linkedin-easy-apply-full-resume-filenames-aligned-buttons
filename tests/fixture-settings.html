@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saved resume list layout smoke test</title>
+  <style>
+    body { font: 15px Arial, sans-serif; background: #eee; }
+    dialog { display: block; width: 600px; max-width: 95vw; margin: 35px auto;
+      position: relative; border: 0; border-radius: 10px; padding: 20px 32px; }
+    .content { margin-left: 8px; }
+    .list { width: 376px; max-width: 376px; }
+    .item { width: 376px; display: flex; align-items: center; box-sizing: border-box;
+      min-height: 72px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; }
+    .type { flex: none; background: #c61b36; color: white; width: 48px;
+      height: 70px; display: grid; place-items: center; }
+    .info { min-width: 0; flex: 1 1 auto; padding: 8px; }
+    .filename { display: block; max-width: 218px; overflow: hidden;
+      text-overflow: ellipsis; white-space: nowrap; }
+    .date { color: #777; margin-top: 6px; font-size: 13px; }
+    .actions { width: 100px; height: 70px; flex: none; }
+    button { cursor: pointer; }
+    .actions button { width: 100%; height: 100%; background: transparent; border: 0; }
+  </style>
+  <script defer src="../content.js"></script>
+</head>
+<body>
+  <dialog role="dialog" open>
+    <h2>Resumes and application data</h2>
+    <div class="content">
+      <h3>Share resume data with hirers</h3>
+      <p>The resumes you choose to share are available to employers.</p>
+      <div class="list" id="list"></div>
+      <button type="button" id="more">+21 more resumes</button>
+      <button type="button" id="upload">Upload resume</button>
+      <p id="status">Checking layout…</p>
+    </div>
+  </dialog>
+  <script>
+    function addResume(name, hasDate = true, prepend = false) {
+      const item = document.createElement("div");
+      item.className = "item";
+      item.innerHTML = `<div class="type">PDF</div><div class="info">
+        <span class="filename"></span>
+        ${hasDate ? '<div class="date">Last used on 11/5/2026</div>' : ''}
+        </div><div class="actions"><button type="button" aria-label="More options">•••</button></div>`;
+      item.querySelector(".filename").textContent = name;
+      document.getElementById("list")[prepend ? "prepend" : "append"](item);
+    }
+    addResume("Ahmed_Soudi_Social_Media_Specialist_Misr_Radiology_Center_CV.pdf");
+    addResume("Ahmed_Soudi_Digital_Marketing_Lead_Generation_Specialist_CV.pdf");
+    document.getElementById("more").onclick = () =>
+      addResume("Ahmed_Soudi_Digital_Marketing_E-Commerce_Specialist_CV.pdf");
+    document.getElementById("upload").onclick = () =>
+      addResume("Ahmed_Soudi_Newly_Uploaded_Digital_Marketing_Assistant_Manager_CV.pdf", false, true);
+    setTimeout(() => {
+      const cards = document.querySelectorAll("[data-li-settings-card]").length;
+      const expanded = document.querySelector("[data-li-settings-dialog]");
+      const names = document.querySelectorAll("[data-li-settings-name]").length;
+      document.getElementById("status").textContent = expanded && cards === 2 && names === 2
+        ? "PASS: initial saved resumes enhanced; click More and Upload to test dynamic rows"
+        : "FAIL: expected 2 enhanced saved resumes, found " + cards;
+    }, 500);
+  </script>
+</body>
+</html>
