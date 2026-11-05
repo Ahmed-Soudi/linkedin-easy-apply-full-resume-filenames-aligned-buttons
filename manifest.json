@@ -1,0 +1,17 @@
+{
+  "manifest_version": 3,
+  "name": "LinkedIn Easy Apply - Full Resume Filenames & Aligned Buttons",
+  "version": "1.0.0",
+  "description": "Show complete resume filenames on one line, expand resume cards, and align download buttons and selection circles in LinkedIn Easy Apply.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/jobs/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
