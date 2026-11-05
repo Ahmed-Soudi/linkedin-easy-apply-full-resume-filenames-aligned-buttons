@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Resume layout smoke test</title>
+  <style>
+    body { font: 15px Arial, sans-serif; background:#eee; }
+    dialog { display:block; width: 850px; max-width:95%; position:static; margin:30px auto; padding:20px; border:0; background:#fff; }
+    .card { display:flex; align-items:center; gap:12px; padding:10px; border:1px solid #ddd; border-radius:8px; margin:6px 0; }
+    .main { display:flex; align-items:center; }
+    .clickable, .inner { display:flex; align-items:center; }
+    .text { max-width:200px; }
+    .filename { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:200px; display:block; }
+    .fileicon {background:#cf122f;color:white;padding:15px 8px;margin-right:8px;}
+    .radio {margin-left:auto;}
+    a {padding:0 8px; color:#444;}
+  </style>
+  <script defer src="../content.js"></script>
+  <script>
+    function makeCard(name) {
+      const wrap = document.createElement('div');
+      wrap.innerHTML = `<div class="card" style="width:33.6rem;border-color:#ddd">
+        <div class="main"><div role="button" class="clickable"><span class="fileicon">PDF</span>
+          <div class="text"><p class="filename"><span></span></p><small>11/5/2026</small></div>
+        </div><a href="https://www.linkedin.com/ambry/?download=1" aria-label="Download">⇩</a></div>
+        <div class="radio"><input type="radio" name="resumes"></div>
+      </div>`;
+      wrap.querySelector('.filename span').textContent = name;
+      return wrap.firstElementChild;
+    }
+    document.addEventListener('DOMContentLoaded', () => {
+      const cards = document.getElementById('cards');
+      cards.appendChild(makeCard('Ahmed_Soudi_Digital_Marketing_Lead_Generation_Specialist_CV.pdf'));
+      setTimeout(() => cards.appendChild(makeCard('Ahmed_Soudi_Social_Media_Specialist_Misr_Radiology_Center_CV.pdf')), 150);
+      setTimeout(() => {
+        const fixed = cards.querySelectorAll('[data-li-resume-card]').length;
+        const aligned = cards.querySelectorAll('[data-li-resume-download]').length;
+        const status = document.getElementById('status');
+        status.textContent = fixed === 2 && aligned === 2 ? 'PASS: initial and dynamic cards enhanced' : 'FAIL: expected 2 enhanced cards, got ' + fixed;
+      }, 1000);
+    });
+  </script>
+</head>
+<body>
+  <dialog data-testid="dialog" open>
+    <h2>Apply — Resume</h2>
+    <p id="status">Running smoke test...</p>
+    <section id="cards"></section>
+  </dialog>
+</body>
+</html>
