@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LinkedIn legacy saved resume modal regression test</title>
+  <style>
+    body { font: 15px Arial, sans-serif; background: #eee; }
+    .job-seeking-preferences-index__modal {
+      background: white; margin: 24px auto; width: 600px; max-width: 92vw;
+      border-radius: 8px; padding: 0; box-sizing: border-box;
+    }
+    .artdeco-modal__header, .p5 { padding: 20px 32px; }
+    .display-flex { display: flex; }
+    .flex-column { flex-direction: column; }
+    .flex-grow-1 { flex-grow: 1; }
+    .jobs-resume-card__container {
+      width: 376px; box-sizing: border-box; margin-bottom: 10px;
+      display: flex; align-items: center; border: 1px solid #ddd;
+      border-radius: 8px; min-height: 72px;
+    }
+    .ui-attachment { padding: 10px; flex: 1 1 auto; min-width: 0; }
+    .ui-attachment__filename { white-space: nowrap; overflow: hidden;
+      text-overflow: ellipsis; max-width: 210px; font-size: 15px; margin: 0 0 4px; }
+    .ui-attachment__filesize { font-size: 13px; color: #777; margin: 0; }
+    .jobs-resume-card__options-button-container {
+      display: flex; width: 100px; flex: none; justify-content: center;
+      align-items: center; border-left: 1px solid #ddd; height: 70px;
+    }
+    button { cursor: pointer; }
+  </style>
+  <script defer src="../content.js"></script>
+</head>
+<body>
+  <div class="artdeco-modal job-seeking-preferences-index__modal" role="dialog">
+    <div class="artdeco-modal__header">
+      <h1>Resumes and application data</h1>
+    </div>
+    <div class="artdeco-modal__content"><div class="p5">
+      <h2>Share resume data with hirers</h2>
+      <div><div class="display-flex flex-column flex-grow-1" id="resumes"></div></div>
+      <button id="show-more" type="button" aria-label="Show more resumes">+21 more resumes</button>
+      <button id="upload" type="button">Upload resume</button>
+      <p id="status">Checking...</p>
+    </div></div>
+  </div>
+  <script>
+    function addResume(name, isNew = false) {
+      const card = document.createElement('div');
+      card.className = 'jobs-resume-card__container';
+      const attachment = document.createElement('div');
+      attachment.className = 'ui-attachment jobs-resume-card__attachment ui-attachment--pdf';
+      const filename = document.createElement('h3');
+      filename.className = 'ui-attachment__filename jobs-resume-card__filedata';
+      filename.textContent = name;
+      const date = document.createElement('p');
+      date.className = 'ui-attachment__filesize jobs-resume-card__filedata';
+      date.textContent = isNew ? 'Uploaded on 11/5/2026' : 'Last used on 11/3/2026';
+      attachment.append(filename, date);
+      const menu = document.createElement('div');
+      menu.className = 'jobs-resume-card__options-button-container';
+      const button = document.createElement('button');
+      button.className = 'jobs-resume-card__dropdown-trigger';
+      button.type = 'button'; button.textContent = '•••';
+      menu.append(button);
+      card.append(attachment, menu);
+      const resumes = document.getElementById('resumes');
+      resumes[isNew ? 'prepend' : 'append'](card);
+    }
+    addResume('Test_User_Social_Media_Specialist_CV.pdf');
+    addResume('Test_User_Digital_Marketing_Lead_Generation_Specialist_CV.pdf');
+    document.getElementById('show-more').addEventListener('click', () =>
+      addResume('Test_User_Social_Media_Specialist_Radiology_Center_CV.pdf'));
+    document.getElementById('upload').addEventListener('click', () =>
+      addResume('Test_User_New_Digital_Marketing_Assistant_Manager_CV.pdf', true));
+    setTimeout(() => {
+      const dialog = document.querySelector('[data-li-settings-dialog]');
+      const cards = document.querySelectorAll('[data-li-settings-card]').length;
+      const names = document.querySelectorAll('[data-li-settings-name]').length;
+      document.getElementById('status').textContent =
+        dialog && cards === 2 && names === 2
+          ? 'PASS: Legacy saved resume list enhanced'
+          : 'FAIL: Legacy list not enhanced (' + cards + ' cards, ' + names + ' names)';
+    }, 500);
+  </script>
+</body>
+</html>
