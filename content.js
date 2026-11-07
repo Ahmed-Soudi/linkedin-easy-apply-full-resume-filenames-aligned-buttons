@@ -40,6 +40,11 @@
       margin-left: auto !important;
       flex: 0 0 auto !important;
     }
+    [data-li-resume-width] {
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    }
     [data-li-resume-text-ancestor] {
       min-width: 0 !important;
       max-width: none !important;
@@ -58,7 +63,9 @@
       word-break: normal !important;
       -webkit-line-clamp: unset !important;
     }
-    [data-li-resume-filename] > span {
+    [data-li-resume-filename] span,
+    [data-li-resume-filename] strong,
+    [data-li-resume-filename] b {
       white-space: nowrap !important;
       overflow: visible !important;
       text-overflow: clip !important;
@@ -147,55 +154,122 @@
     if (style.textContent !== css) style.textContent = css;
   }
 
-  function getFilename(card) {
-    return Array.from(card.querySelectorAll("p > span")).find((span) =>
-      FILE_EXTENSION.test(span.textContent.trim())
-    );
+  // A LinkedIn release can render a filename as a direct P text node,
+  // an inner SPAN, an H3, or another leaf element. Match the filename itself
+  // rather than relying on one particular element nesting.
+  function filenameElements(container) {
+    const elements = Array.from(container.querySelectorAll(
+      'p, span, h3, h4, strong, b, label, div'
+    ));
+    return elements.filter((element) => {
+      const name = element.textContent.trim();
+      if (!FILE_EXTENSION.test(name) || name.length < 9 || name.length > 260) {
+        return false;
+      }
+      if (name.includes('\n') || /^(download|show options for)\s/i.test(name)) {
+        return false;
+      }
+      if (element.closest('a[href*="/ambry/"]')) return false;
+      // Reject wrapper elements when an inner element contains the filename.
+      return !Array.from(element.children).some((child) =>
+        FILE_EXTENSION.test(child.textContent.trim())
+      );
+    });
   }
 
-  function getCard(radio, dialog) {
-    // Choose the closest ancestor with exactly this one radio and a filename.
-    // A broader fieldset could also contain other resume cards; avoid it.
-    for (let element = radio.parentElement; element && element !== dialog;
-      element = element.parentElement) {
-      if (element.querySelectorAll('input[type="radio"]').length !== 1) continue;
-      const filename = getFilename(element);
-      if (filename) return { card: element, filename };
+  const RADIO_SELECTOR = 'input[type="radio"], [role="radio"]';
+  const CARD_LIMIT_SELECTOR = 'fieldset, [role="radiogroup"]';
+
+  function findEasyApplyCard(control, boundary) {
+    let fallback = null;
+    for (let node = control.parentElement;
+         node && node !== boundary;
+         node = node.parentElement) {
+      if (node.matches(CARD_LIMIT_SELECTOR)) break;
+      const controls = node.querySelectorAll(RADIO_SELECTOR);
+      if (controls.length > 1) break;
+      if (controls.length !== 1 || controls[0] !== control) continue;
+
+      const names = filenameElements(node);
+      if (names.length !== 1) continue;
+      const filename = names[0];
+      const branches = Array.from(node.children);
+      const filenameBranch = branches.find((child) => child.contains(filename));
+      const controlBranch = branches.find((child) => child.contains(control));
+      const result = { card: node, filename, control,
+                       filenameBranch, controlBranch };
+
+      // Prefer the actual two-column résumé card rather than an inner wrapper.
+      if (filenameBranch && controlBranch &&
+          filenameBranch !== controlBranch) return result;
+      fallback ??= result;
     }
-    return null;
+    return fallback;
   }
 
-  function fixCard(radio, dialog) {
-    const result = getCard(radio, dialog);
+  function fixEasyApplyCard(control, boundary) {
+    const result = findEasyApplyCard(control, boundary);
     if (!result) return;
 
-    const { card, filename } = result;
-    const paragraph = filename.closest("p");
-    const children = Array.from(card.children);
-    const main = children.find((child) => child.contains(filename));
-    const radioSection = children.find((child) => child.contains(radio));
-    if (!paragraph || !main || !radioSection || main === radioSection) return;
-
-    const clickable = filename.closest('[role="button"]');
-    const download = main.querySelector(DOWNLOAD_SELECTOR);
-
-    card.setAttribute("data-li-resume-card", "");
-    main.setAttribute("data-li-resume-main", "");
-    radioSection.setAttribute("data-li-resume-radio", "");
-    if (clickable && main.contains(clickable)) {
-      clickable.setAttribute("data-li-resume-clickable", "");
-    }
-    if (download) download.setAttribute("data-li-resume-download", "");
-
-    paragraph.setAttribute("data-li-resume-filename", "");
-    for (let element = paragraph.parentElement, level = 0;
-      element && element !== card && level < 2;
-      element = element.parentElement, level++) {
-      element.setAttribute("data-li-resume-text-ancestor", "");
-    }
+    const { card, filename, filenameBranch, controlBranch } = result;
+    const nameBlock = filename.closest('p, h3, h4') || filename;
+    card.setAttribute('data-li-resume-card', '');
+    nameBlock.setAttribute('data-li-resume-filename', '');
     filename.title = filename.textContent.trim();
+
+    const main = filenameBranch && filenameBranch !== controlBranch
+      ? filenameBranch : null;
+    const radioContainer = controlBranch && controlBranch !== filenameBranch
+      ? controlBranch : null;
+
+    if (main) main.setAttribute('data-li-resume-main', '');
+    if (radioContainer) radioContainer.setAttribute('data-li-resume-radio', '');
+    const clickable = filename.closest('[role="button"]');
+    if (clickable && card.contains(clickable)) {
+      clickable.setAttribute('data-li-resume-clickable', '');
+    }
+    const download = card.querySelector(DOWNLOAD_SELECTOR);
+    if (download) download.setAttribute('data-li-resume-download', '');
+
+    for (let parent = nameBlock.parentElement, level = 0;
+         parent && parent !== card && level < 4;
+         parent = parent.parentElement, level++) {
+      parent.setAttribute('data-li-resume-text-ancestor', '');
+    }
+
+    // LinkedIn sometimes puts the 33.6rem fixed width on an outer wrapper,
+    // not the row that holds the filename and selection circle.
+    for (let ancestor = card;
+         ancestor && ancestor !== boundary && !ancestor.matches(CARD_LIMIT_SELECTOR);
+         ancestor = ancestor.parentElement) {
+      const inlineWidth = ancestor.style?.width || '';
+      if (!/^\d+(?:\.\d+)?(?:rem|px)$/.test(inlineWidth)) continue;
+      if (ancestor.querySelectorAll(RADIO_SELECTOR).length !== 1) break;
+      ancestor.setAttribute('data-li-resume-width', '');
+    }
   }
 
+  function scanEasyApply() {
+    const dialogs = Array.from(document.querySelectorAll(
+      'dialog[open], [role="dialog"], [data-testid="dialog"]'
+    ));
+    for (const dialog of new Set(dialogs)) {
+      if (dialog.tagName === 'DIALOG' && !dialog.open) continue;
+      if (!dialog.querySelector(RADIO_SELECTOR)) continue;
+      if (!filenameElements(dialog).length) continue;
+
+      const resumeText = dialog.textContent;
+      const isResumePicker = /select or upload a resume/i.test(resumeText) ||
+        !!dialog.querySelector('fieldset[role="radiogroup"]') ||
+        !!dialog.querySelector('[data-sdui-screen*="EasyApply"]');
+      if (!isResumePicker) continue;
+
+      ensureStyles();
+      for (const control of dialog.querySelectorAll(RADIO_SELECTOR)) {
+        fixEasyApplyCard(control, dialog);
+      }
+    }
+  }
 
   function findSettingsDialog() {
     const title = Array.from(document.querySelectorAll('h1,h2,h3,h4,[role="heading"]'))
@@ -375,14 +449,7 @@
   }
 
   function scan() {
-    const dialog = document.querySelector(DIALOG_SELECTOR);
-    if (dialog && dialog.open) {
-      ensureStyles();
-      // Download links are optional, particularly for newly uploaded resumes.
-      for (const radio of dialog.querySelectorAll('input[type="radio"]')) {
-        fixCard(radio, dialog);
-      }
-    }
+    scanEasyApply();
 
     fixSettingsDialog();
     fixLegacySavedResumeDialog();
