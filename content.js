@@ -249,8 +249,8 @@
     }
   }
 
-  function scanEasyApply() {
-    const dialogs = Array.from(document.querySelectorAll(
+  function scanEasyApply(root = document) {
+    const dialogs = Array.from(root.querySelectorAll(
       'dialog[open], [role="dialog"], [data-testid="dialog"]'
     ));
     for (const dialog of new Set(dialogs)) {
@@ -264,7 +264,7 @@
         !!dialog.querySelector('[data-sdui-screen*="EasyApply"]');
       if (!isResumePicker) continue;
 
-      ensureStyles();
+      ensureStyles(root);
       for (const control of dialog.querySelectorAll(RADIO_SELECTOR)) {
         fixEasyApplyCard(control, dialog);
       }
@@ -457,7 +457,10 @@
     // The legacy Jobs modal is rendered inside declarative Shadow DOM.
     // document.querySelector cannot see elements across that boundary.
     const shadowRoot = observeLinkedInShadowRoot();
-    if (shadowRoot) fixLegacySavedResumeDialog(shadowRoot);
+    if (shadowRoot) {
+      fixLegacySavedResumeDialog(shadowRoot);
+      scanEasyApply(shadowRoot);
+    }
   }
 
   let scanScheduled = false;
