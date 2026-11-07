@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "LinkedIn Easy Apply - Full Resume Filenames & Aligned Buttons",
-  "version": "1.0.4",
-  "description": "Expand LinkedIn resume filenames and align controls in Easy Apply and saved-resume settings, including Shadow DOM dialogs.",
+  "version": "1.0.5",
+  "description": "Show complete resume filenames on one line, expand cards and align controls in LinkedIn Easy Apply and saved-resume settings.",
   "content_scripts": [
     {
       "matches": [
