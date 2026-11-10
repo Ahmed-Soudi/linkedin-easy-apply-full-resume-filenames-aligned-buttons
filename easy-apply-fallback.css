@@ -1,0 +1,65 @@
+/*
+ * Fallback for LinkedIn's Easy Apply SDUI resume cards.
+ * No JavaScript detection required. Narrow scope prevents other job forms
+ * and the saved-resume preferences dialog from being affected.
+ */
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"]:has(input[type="radio"], [role="radio"]) {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"]:has(input[type="radio"], [role="radio"]) > div:has([role="button"]) {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"]:has(input[type="radio"], [role="radio"]) > div:has(input[type="radio"], [role="radio"]) {
+  margin-left: auto !important;
+  flex: 0 0 auto !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"] [role="button"]:has(p > span) {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"] [role="button"]:has(p > span) div {
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"] [role="button"] p:has(> span) {
+  display: block !important;
+  max-width: 100% !important;
+  white-space: nowrap !important;
+  text-overflow: clip !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overflow-wrap: normal !important;
+  -webkit-line-clamp: unset !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"] [role="button"] p > span {
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]
+  div[style*="33.6rem"] a[href*="/ambry/"] {
+  margin-left: auto !important;
+  margin-right: 16px !important;
+  flex-shrink: 0 !important;
+}
