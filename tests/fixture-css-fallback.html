@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Easy Apply CSS fallback regression</title>
+<link rel="stylesheet" href="../easy-apply-fallback.css">
+<style>
+  body {font-family: Arial, sans-serif; background:#eee; margin:20px;}
+  .dialog { width:min(880px,95vw); margin:auto; background:#fff; padding:20px; border-radius:10px; box-sizing:border-box;}
+  fieldset {border:0; padding:0; margin:0;}
+  .card { display:flex; align-items:center; padding:8px; border:1px solid #ddd; box-sizing:border-box; border-radius:8px; margin:8px 0;}
+  .content {display:flex;align-items:center;min-width:0;gap:8px;}
+  .click { display:flex; align-items:center; min-width:0; flex:1;}
+  .icon {background:#cb1436;color:white;font-weight:bold;padding:16px 10px;border-radius:7px;margin-right:8px;}
+  .name {white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px;margin:0;font-size:15px;}
+  .date {font-size:12px;color:#666;margin:2px 0 0;}
+  .choose { margin-left:auto; padding:0 3px;}
+  .download {padding:8px;}
+</style>
+</head>
+<body>
+<div class="dialog" data-sdui-screen="com.linkedin.sdui.flagshipnav.jobs.easyapply.EasyApply">
+  <h2>Apply to Sample Company</h2>
+  <p>Resume*</p>
+  <p>Select or upload a resume in DOC, DOCX, or PDF format that is less than 2MB</p>
+  <fieldset role="radiogroup" id="resumes">
+    <div class="card" style="width: 33.6rem">
+      <div class="content">
+        <div class="click" role="button">
+          <span class="icon">PDF</span><div><p class="name"><span>Sample_User_Digital_Marketing_Lead_Generation_Specialist_CV.pdf</span></p><p class="date">11/7/2026</p></div>
+        </div>
+        <a class="download" href="/ambry/sample1" aria-label="Download">⇩</a>
+      </div>
+      <div class="choose"><input type="radio" name="resume" aria-label="Choose CV"></div>
+    </div>
+    <div class="card" style="width: 33.6rem">
+      <div class="content">
+        <div class="click" role="button">
+          <span class="icon">PDF</span><div><p class="name"><span>Sample_User_Social_Media_Manager_CV.pdf</span></p><p class="date">11/8/2026</p></div>
+        </div>
+        <a class="download" href="/ambry/sample2" aria-label="Download">⇩</a>
+      </div>
+      <div class="choose"><input type="radio" name="resume" aria-label="Choose CV"></div>
+    </div>
+  </fieldset>
+  <button type="button" id="add">Simulate new résumé</button>
+  <p id="status">Checking…</p>
+</div>
+<script>
+function check() {
+  const cards = [...document.querySelectorAll('.card')];
+  const fieldset = document.querySelector('fieldset');
+  const widthsOk = cards.every((c) => c.getBoundingClientRect().width > fieldset.getBoundingClientRect().width * .90);
+  const namesOk = cards.every((c) => {
+    const n = c.querySelector('.name');
+    return getComputedStyle(n).whiteSpace === 'nowrap' && getComputedStyle(n).textOverflow === 'clip';
+  });
+  const aligned = cards.map((c) => c.querySelector('.download').getBoundingClientRect().x);
+  const downloadOk = aligned.every((x) => Math.abs(x-aligned[0]) <= 2);
+  document.getElementById('status').textContent = widthsOk && namesOk && downloadOk
+    ? 'PASS: ' + cards.length + ' cards, full widths, single-line names, aligned downloads'
+    : 'FAIL: width=' + widthsOk + ', names=' + namesOk + ', downloads=' + downloadOk;
+}
+document.getElementById('add').onclick = () => {
+  const item = document.querySelector('.card').cloneNode(true);
+  item.querySelector('.name span').textContent = 'Sample_User_Newly_Uploaded_Digital_Marketing_Assistant_Manager_CV.pdf';
+  document.getElementById('resumes').appendChild(item);
+  check();
+};
+check();
+</script>
+</body>
+</html>
