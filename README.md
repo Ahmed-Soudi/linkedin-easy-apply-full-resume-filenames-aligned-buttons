@@ -2,6 +2,14 @@
 
 A lightweight Chrome/Chromium extension that expands resume filenames and aligns controls in both LinkedIn Easy Apply and the saved-resumes list under LinkedIn Jobs.
 
+## Version 1.0.6
+
+Adds **`easy-apply-fallback.css`**, a second, JavaScript-independent way to format LinkedIn Easy Apply's SDUI resume cards. It targets the inline `33.6rem` resume-card width found in captured LinkedIn markup (only within Easy Apply's resume radio group), expands each card to 100%, and keeps filenames on a single line with download icons and radio controls aligned to the right. It applies automatically as cards are loaded, even if the JavaScript resume-card detector misses a variant.
+
+This is a preventive fallback; the CSS was checked in local Chromium against an isolated resume-picker subtree from earlier LinkedIn HTML. It has not yet been verified on the specific Nasoft.eg job page.
+
+When troubleshooting, confirm that Chrome is loading **v1.0.6** from the intended unpacked directory under `chrome://extensions/`, reload the extension and refresh LinkedIn. If the issue persists, inspect whether the Easy Apply resume cards are still under `[data-sdui-screen*="EasyApply"] fieldset[role="radiogroup"]`.
+
 ## Version 1.0.5
 
 Fixes Easy Apply resume cards that still show LinkedIn's narrow, truncated layout. Filename detection now accepts text directly in a paragraph, a nested span, or other filename-bearing elements. It also supports native radio inputs and custom `role="radio"` controls, expands fixed-width wrappers around cards, and checks supported dialogs inside LinkedIn's open `#interop-outlet` Shadow DOM as well as the main document.
@@ -71,7 +79,8 @@ Git must be installed and GitHub authentication configured before pushing.
 ## Files
 
 - `manifest.json`: Chrome Manifest V3; no extra permissions.
-- `content.js`: CSS layout adjustments and a MutationObserver for new resume cards.
+- `content.js`: DOM-based layout adjustments and a MutationObserver for new resume cards.
+- `easy-apply-fallback.css`: CSS-only layout fallback for Easy Apply radio-group cards.
 - `tests/fixture.html`: Local smoke-test page for the original Easy Apply layout.
 - `tests/fixture-easy-apply-variants.html`: Alternative Easy Apply markup regression fixture.
 - `tests/fixture-settings.html`: Local smoke-test page for the newer saved-resumes dialog, expansion, and uploads.
