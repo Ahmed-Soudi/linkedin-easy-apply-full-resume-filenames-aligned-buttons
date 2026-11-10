@@ -83,6 +83,7 @@ Git must be installed and GitHub authentication configured before pushing.
 - `easy-apply-fallback.css`: CSS-only layout fallback for Easy Apply radio-group cards.
 - `tests/fixture.html`: Local smoke-test page for the original Easy Apply layout.
 - `tests/fixture-easy-apply-variants.html`: Alternative Easy Apply markup regression fixture.
+- `tests/fixture-css-fallback.html`: CSS-only regression for the narrow `33.6rem` cards, aligned download buttons and dynamically added resumes.
 - `tests/fixture-settings.html`: Local smoke-test page for the newer saved-resumes dialog, expansion, and uploads.
 - `tests/fixture-legacy-settings.html`: Regression test for the older saved-resumes Artdeco markup provided by LinkedIn.
 - `tests/fixture-shadow-settings.html`: Browser regression test for the actual open Shadow DOM boundary, dynamic uploads, modal width, and full filenames.
